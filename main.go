@@ -13,36 +13,39 @@ import (
 )
 
 var (
-	gatewayApiURL = "http://%s:82/smartmeter/api/read"
+	gatewayApiURL = "http://%s/smartmeter/api/read"
 )
 
 type ApiResponse struct {
-	FirmwareRunning         bool
-	FirmwareAvailable       bool
-	FirmwareUpdateAvailable bool
-	ElectricityTariff       int
-	EnergyDeliveredTariff1  float64
-	EnergyReturnedTariff1   float64
-	EnergyDeliveredTariff2  float64
-	EnergyReturnedTariff2   float64
-	PowerDeliveredTotal     int
-	PowerReturnedTotal      int
-	PowerDeliveredL1        int
-	PowerDeliveredL2        int
-	PowerDeliveredL3        int
-	PowerReturnedL1         int
-	PowerReturnedL2         int
-	PowerReturnedL3         int
-	VoltageL1               int
-	VoltageL2               int
-	VoltageL3               int
-	CurrentL1               int
-	CurrentL2               int
-	CurrentL3               int
-	GasDelivered            float64
-	GasDeliveredHour        float64
-	PowerDelivered          float64
-	PowerDeliveredHour      float64
+	FirmwareRunning         string `json:"firmware_running"`
+	FirmwareAvailable       string `json:"firmware_available"`
+	FirmwareUpdateAvailable string `json:"firmware_update_available"`
+	ElectricityTariff       string `json:"ElectricityTariff"`
+	EnergyDeliveredTariff1  string `json:"EnergyDeliveredTariff1"`
+	EnergyReturnedTariff1   string `json:"EnergyReturnedTariff1"`
+	EnergyDeliveredTariff2  string `json:"EnergyDeliveredTariff2"`
+	EnergyReturnedTariff2   string `json:"EnergyReturnedTariff2"`
+	PowerDeliveredTotal     string `json:"PowerDelivered_total"`
+	PowerReturnedTotal      string `json:"PowerReturned_total"`
+	PowerDeliveredL1        string `json:"PowerDelivered_l1"`
+	PowerDeliveredL2        string `json:"PowerDelivered_l2"`
+	PowerDeliveredL3        string `json:"PowerDelivered_l3"`
+	PowerReturnedL1         string `json:"PowerReturned_l1"`
+	PowerReturnedL2         string `json:"PowerReturned_l2"`
+	PowerReturnedL3         string `json:"PowerReturned_l3"`
+	VoltageL1               string `json:"Voltage_l1"`
+	VoltageL2               string `json:"Voltage_l2"`
+	VoltageL3               string `json:"Voltage_l3"`
+	CurrentL1               string `json:"Current_l1"`
+	CurrentL2               string `json:"Current_l2"`
+	CurrentL3               string `json:"Current_l3"`
+	PowerDeliveredHour      string `json:"PowerDeliveredHour"`
+	PowerDeliveredNet       string `json:"PowerDeliveredNetto"`
+	GasDelivered            string `json:"GasDelivered"`
+	GasDeliveredHour        string `json:"GasDeliveredHour"`
+}
+
+type Stats struct {
 }
 
 type Exporter struct {
@@ -79,18 +82,14 @@ func fetchSystemData() {
 		log.Fatal("💥 SGPE_HOST not set")
 	}
 
-	getDataFromApi(fmt.Sprintf(gatewayApiURL, host))
+	var apiResponse ApiResponse
+	//var stats *Stats
+	getDataFromApi(fmt.Sprintf(gatewayApiURL, host), &apiResponse)
 
-	//var envoyData = envoyType{
-	//	ProductionType:          &envoyProductionType{},
-	//	ProductionInvertersType: &[]envoyProductionInvertersType{},
-	//	HomeType:                &envoyHomeType{},
-	//}
-	//
-	//return envoyData
+	fmt.Println(apiResponse)
 }
 
-func getDataFromApi(url string, data interface{}) {
+func getDataFromApi(url string, data *ApiResponse) {
 	req, _ := http.NewRequest(http.MethodGet, url, bytes.NewBuffer(nil))
 
 	response, err := http.DefaultClient.Do(req)
@@ -109,8 +108,8 @@ func getDataFromApi(url string, data interface{}) {
 
 	body, _ := io.ReadAll(response.Body)
 
-	err = json.Unmarshal(body, &data)
+	err = json.Unmarshal(body, data)
 	if err != nil {
-		log.Fatal("💥 JSON object was not valid")
+		log.Fatalf("💥 JSON object was not valid: %s", err)
 	}
 }
