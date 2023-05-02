@@ -10,11 +10,57 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"strconv"
 )
 
 var (
 	gatewayApiURL = "http://%s/smartmeter/api/read"
+
+	descFirmwareRunning         = prometheus.NewDesc("smartmeter_gateway_firmware_running", "Current version of the running firmware", nil, nil)
+	descFirmwareAvailable       = prometheus.NewDesc("smartmeter_gateway_firmware_available", "Latest avaialble version fo the firmware", nil, nil)
+	descFirmwareUpdateAvailable = prometheus.NewDesc("smartmeter_gateway_firmware_update_available", "If there is a new version of the firmware available", nil, nil)
+	descGasConsumed             = prometheus.NewDesc("smartmeter_gateway_gas_consumed", "The total amount of gas that is consumed cubic meters", nil, nil)
+	descGasConsumedHour         = prometheus.NewDesc("smartmeter_gateway_gas_consumed_hour", "The amount of gas consumed in the current hour in cubic meters", nil, nil)
+	//desc                        = prometheus.NewDesc("smartmeter_gateway_", "", nil, nil)
 )
+
+type Firmware struct {
+	Running         int
+	Available       int
+	UpdateAvailable bool
+}
+type Gas struct {
+	Consumed     float64
+	ConsumedHour float64
+}
+
+type Power struct {
+	Tariff          int
+	ConsumedTariff1 float64
+	ProducedTariff1 float64
+	ConsumedTariff2 float64
+	ProducedTariff2 float64
+	ConsumedTotal   int
+	ProducedTotal   int
+	ConsumedL1      int
+	ConsumedL2      int
+	ConsumedL3      int
+	ProducedL1      int
+	ProducedL2      int
+	ProducedL3      int
+	VoltageL1       int
+	VoltageL2       int
+	VoltageL3       int
+	CurrentL1       int
+	CurrentL2       int
+	CurrentL3       int
+	ConsumedHour    float64
+}
+type Stats struct {
+	Firmware Firmware
+	Gas      Gas
+	Power    Power
+}
 
 type ApiResponse struct {
 	FirmwareRunning         string `json:"firmware_running"`
@@ -45,9 +91,6 @@ type ApiResponse struct {
 	GasDeliveredHour        string `json:"GasDeliveredHour"`
 }
 
-type Stats struct {
-}
-
 type Exporter struct {
 }
 
@@ -76,20 +119,76 @@ func (e *Exporter) Collect(metrics chan<- prometheus.Metric) {
 	fetchSystemData()
 }
 
+func getInt(s string) int {
+	value, err := strconv.Atoi(s)
+	if err != nil {
+		log.Fatal(err)
+	}
+	return value
+}
+
+func getBool(s string) bool {
+	value, err := strconv.ParseBool(s)
+	if err != nil {
+		log.Fatal(err)
+	}
+	return value
+}
+
+func getFloat(s string) float64 {
+	value, err := strconv.ParseFloat(s, 64)
+	if err != nil {
+		log.Fatal(err)
+	}
+	return value
+}
+
 func fetchSystemData() {
 	host := os.Getenv("SGPE_HOST")
 	if host == "" {
 		log.Fatal("💥 SGPE_HOST not set")
 	}
 
-	var apiResponse ApiResponse
-	//var stats *Stats
+	var apiResponse *ApiResponse
 	getDataFromApi(fmt.Sprintf(gatewayApiURL, host), &apiResponse)
 
-	fmt.Println(apiResponse)
+	stats := Stats{
+		Firmware: Firmware{
+			Running:         getInt(apiResponse.FirmwareRunning),
+			Available:       getInt(apiResponse.FirmwareAvailable),
+			UpdateAvailable: getBool(apiResponse.FirmwareUpdateAvailable),
+		},
+		Gas: Gas{
+			Consumed:     getFloat(apiResponse.GasDelivered),
+			ConsumedHour: getFloat(apiResponse.GasDeliveredHour),
+		},
+		Power: Power{
+			Tariff:          getInt(apiResponse.ElectricityTariff),
+			ConsumedTariff1: getFloat(apiResponse.EnergyDeliveredTariff1),
+			ProducedTariff1: getFloat(apiResponse.EnergyReturnedTariff1),
+			ConsumedTariff2: getFloat(apiResponse.EnergyDeliveredTariff2),
+			ProducedTariff2: getFloat(apiResponse.EnergyReturnedTariff2),
+			ConsumedTotal:   getInt(apiResponse.PowerDeliveredTotal),
+			ProducedTotal:   getInt(apiResponse.PowerReturnedTotal),
+			ConsumedL1:      getInt(apiResponse.PowerDeliveredL1),
+			ConsumedL2:      getInt(apiResponse.PowerDeliveredL2),
+			ConsumedL3:      getInt(apiResponse.PowerDeliveredL3),
+			ProducedL1:      getInt(apiResponse.PowerReturnedL1),
+			ProducedL2:      getInt(apiResponse.PowerReturnedL2),
+			ProducedL3:      getInt(apiResponse.PowerReturnedL3),
+			VoltageL1:       getInt(apiResponse.VoltageL1),
+			VoltageL2:       getInt(apiResponse.VoltageL2),
+			VoltageL3:       getInt(apiResponse.VoltageL3),
+			CurrentL1:       getInt(apiResponse.CurrentL1),
+			CurrentL2:       getInt(apiResponse.CurrentL2),
+			CurrentL3:       getInt(apiResponse.CurrentL3),
+			ConsumedHour:    getFloat(apiResponse.PowerDeliveredHour),
+		},
+	}
+
 }
 
-func getDataFromApi(url string, data *ApiResponse) {
+func getDataFromApi(url string, data interface{}) {
 	req, _ := http.NewRequest(http.MethodGet, url, bytes.NewBuffer(nil))
 
 	response, err := http.DefaultClient.Do(req)
