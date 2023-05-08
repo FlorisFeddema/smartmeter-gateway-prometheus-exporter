@@ -136,7 +136,7 @@ func main() {
 
 	http.Handle("/metrics", promhttp.Handler())
 	http.HandleFunc("/healthz", func(w http.ResponseWriter, r *http.Request) { _, _ = w.Write([]byte("ok")) })
-	log.Println("⚙️ Exporter is ready to accept requests")
+	log.Println("⚙️ exporter is ready to accept requests")
 
 	log.Fatal(http.ListenAndServe(":80", nil))
 }
@@ -279,7 +279,7 @@ func (e *Exporter) Collect(metrics chan<- prometheus.Metric) {
 		prometheus.GaugeValue,
 		stats.Power.ConsumedNet,
 	)
-	log.Println("⚙️ Collected some metrics")
+	log.Println("⚙️ Collected metrics")
 }
 
 func boolToFloat64(b bool) float64 {
