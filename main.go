@@ -21,7 +21,17 @@ var (
 	descFirmwareUpdateAvailable = prometheus.NewDesc("smartmeter_gateway_firmware_update_available", "If there is a new version of the firmware available", nil, nil)
 	descGasConsumed             = prometheus.NewDesc("smartmeter_gateway_gas_consumed", "The total amount of gas that is consumed cubic meters", nil, nil)
 	descGasConsumedHour         = prometheus.NewDesc("smartmeter_gateway_gas_consumed_hour", "The amount of gas consumed in the current hour in cubic meters", nil, nil)
-	//desc                        = prometheus.NewDesc("smartmeter_gateway_", "", nil, nil)
+	descPowerTariff             = prometheus.NewDesc("smartmeter_gateway_power_tariff", "The current power tariff", nil, nil)
+	descPowerConsumedTotal      = prometheus.NewDesc("smartmeter_gateway_power_consumed_total", "The total amount of power consumed in kWh", []string{"tariff"}, nil)
+	descPowerProducedTotal      = prometheus.NewDesc("smartmeter_gateway_power_produced_total", "The total amount of power produced in kWh", []string{"tariff"}, nil)
+	descPowerConsumedCurrent    = prometheus.NewDesc("smartmeter_gateway_power_consumed_current", "The current amount of power consumed in Watts", nil, nil)
+	descPowerProducedCurrent    = prometheus.NewDesc("smartmeter_gateway_power_produced_current", "The current amount of power produced in Watts", nil, nil)
+	descPowerConsumedPhase      = prometheus.NewDesc("smartmeter_gateway_power_consumed_phase", "The current amount of power consumed in Watts on a phase", []string{"phase"}, nil)
+	descPowerProducedPhase      = prometheus.NewDesc("smartmeter_gateway_power_produced_phase", "The current amount of power produced in Watts on a phase", []string{"phase"}, nil)
+	descPowerVoltagePhase       = prometheus.NewDesc("smartmeter_gateway_power_voltage_phase", "The current voltage on the phase", []string{"phase"}, nil)
+	descPowerCurrentPhase       = prometheus.NewDesc("smartmeter_gateway_power_current_phase", "The current current on the phase", []string{"phase"}, nil)
+	descPowerConsumedHour       = prometheus.NewDesc("smartmeter_gateway_power_consumed_hour", "The amount of power consumed last in this hour in kWh", nil, nil)
+	descPowerConsumedNet        = prometheus.NewDesc("smartmeter_gateway_power_consumed_nett", "The net amount of power currently consumed in Watts", nil, nil)
 )
 
 type Firmware struct {
@@ -29,33 +39,36 @@ type Firmware struct {
 	Available       int
 	UpdateAvailable bool
 }
+
 type Gas struct {
 	Consumed     float64
 	ConsumedHour float64
 }
 
 type Power struct {
-	Tariff          int
-	ConsumedTariff1 float64
-	ProducedTariff1 float64
-	ConsumedTariff2 float64
-	ProducedTariff2 float64
-	ConsumedTotal   int
-	ProducedTotal   int
-	ConsumedL1      int
-	ConsumedL2      int
-	ConsumedL3      int
-	ProducedL1      int
-	ProducedL2      int
-	ProducedL3      int
-	VoltageL1       int
-	VoltageL2       int
-	VoltageL3       int
-	CurrentL1       int
-	CurrentL2       int
-	CurrentL3       int
-	ConsumedHour    float64
+	Tariff               int
+	ConsumedTotalTariff1 float64
+	ProducedTotalTariff1 float64
+	ConsumedTotalTariff2 float64
+	ProducedTotalTariff2 float64
+	ConsumedCurrent      int
+	ProducedCurrent      int
+	ConsumedPhase1       int
+	ConsumedPhase2       int
+	ConsumedPhase3       int
+	ProducedPhase1       int
+	ProducedPhase2       int
+	ProducedPhase3       int
+	VoltagePhase1        int
+	VoltagePhase2        int
+	VoltagePhase3        int
+	CurrentPhase1        int
+	CurrentPhase2        int
+	CurrentPhase3        int
+	ConsumedHour         float64
+	ConsumedNet          float64
 }
+
 type Stats struct {
 	Firmware Firmware
 	Gas      Gas
@@ -86,7 +99,7 @@ type ApiResponse struct {
 	CurrentL2               string `json:"Current_l2"`
 	CurrentL3               string `json:"Current_l3"`
 	PowerDeliveredHour      string `json:"PowerDeliveredHour"`
-	PowerDeliveredNet       string `json:"PowerDeliveredNetto"`
+	PowerDeliveredNetto     string `json:"PowerDeliveredNetto"`
 	GasDelivered            string `json:"GasDelivered"`
 	GasDeliveredHour        string `json:"GasDeliveredHour"`
 }
@@ -99,7 +112,22 @@ func NewExporter() *Exporter {
 }
 
 func (e *Exporter) Describe(ch chan<- *prometheus.Desc) {
-	//ch <- descSystemConnected
+	ch <- descFirmwareRunning
+	ch <- descFirmwareAvailable
+	ch <- descFirmwareUpdateAvailable
+	ch <- descGasConsumed
+	ch <- descGasConsumedHour
+	ch <- descPowerTariff
+	ch <- descPowerConsumedTotal
+	ch <- descPowerProducedTotal
+	ch <- descPowerConsumedCurrent
+	ch <- descPowerProducedCurrent
+	ch <- descPowerConsumedPhase
+	ch <- descPowerProducedPhase
+	ch <- descPowerVoltagePhase
+	ch <- descPowerCurrentPhase
+	ch <- descPowerConsumedHour
+	ch <- descPowerConsumedNet
 }
 
 func main() {
@@ -110,13 +138,155 @@ func main() {
 	http.HandleFunc("/healthz", func(w http.ResponseWriter, r *http.Request) { _, _ = w.Write([]byte("ok")) })
 	log.Println("⚙️ Exporter is ready to accept requests")
 
-	fetchSystemData()
-
-	//log.Fatal(http.ListenAndServe(":9000", nil))
+	log.Fatal(http.ListenAndServe(":9000", nil))
 }
 
 func (e *Exporter) Collect(metrics chan<- prometheus.Metric) {
-	fetchSystemData()
+	stats := fetchSystemData()
+
+	metrics <- prometheus.MustNewConstMetric(
+		descFirmwareRunning,
+		prometheus.GaugeValue,
+		float64(stats.Firmware.Running),
+	)
+	metrics <- prometheus.MustNewConstMetric(
+		descFirmwareAvailable,
+		prometheus.GaugeValue,
+		float64(stats.Firmware.Available),
+	)
+	metrics <- prometheus.MustNewConstMetric(
+		descFirmwareUpdateAvailable,
+		prometheus.GaugeValue,
+		boolToFloat64(stats.Firmware.UpdateAvailable),
+	)
+	metrics <- prometheus.MustNewConstMetric(
+		descGasConsumed,
+		prometheus.CounterValue,
+		stats.Gas.Consumed,
+	)
+	metrics <- prometheus.MustNewConstMetric(
+		descGasConsumedHour,
+		prometheus.GaugeValue,
+		stats.Gas.ConsumedHour,
+	)
+
+	metrics <- prometheus.MustNewConstMetric(
+		descPowerTariff,
+		prometheus.GaugeValue,
+		float64(stats.Power.Tariff),
+	)
+	metrics <- prometheus.MustNewConstMetric(
+		descPowerConsumedTotal,
+		prometheus.CounterValue,
+		stats.Power.ConsumedTotalTariff1,
+		"1",
+	)
+	metrics <- prometheus.MustNewConstMetric(
+		descPowerConsumedTotal,
+		prometheus.CounterValue,
+		stats.Power.ConsumedTotalTariff2,
+		"2",
+	)
+	metrics <- prometheus.MustNewConstMetric(
+		descPowerConsumedCurrent,
+		prometheus.GaugeValue,
+		float64(stats.Power.ConsumedCurrent),
+	)
+	metrics <- prometheus.MustNewConstMetric(
+		descPowerProducedCurrent,
+		prometheus.GaugeValue,
+		float64(stats.Power.ProducedCurrent),
+	)
+	metrics <- prometheus.MustNewConstMetric(
+		descPowerConsumedPhase,
+		prometheus.GaugeValue,
+		float64(stats.Power.ConsumedPhase1),
+		"1",
+	)
+	metrics <- prometheus.MustNewConstMetric(
+		descPowerConsumedPhase,
+		prometheus.GaugeValue,
+		float64(stats.Power.ConsumedPhase2),
+		"2",
+	)
+	metrics <- prometheus.MustNewConstMetric(
+		descPowerConsumedPhase,
+		prometheus.GaugeValue,
+		float64(stats.Power.ConsumedPhase3),
+		"3",
+	)
+	metrics <- prometheus.MustNewConstMetric(
+		descPowerProducedPhase,
+		prometheus.GaugeValue,
+		float64(stats.Power.ProducedPhase1),
+		"1",
+	)
+	metrics <- prometheus.MustNewConstMetric(
+		descPowerProducedPhase,
+		prometheus.GaugeValue,
+		float64(stats.Power.ProducedPhase2),
+		"2",
+	)
+	metrics <- prometheus.MustNewConstMetric(
+		descPowerProducedPhase,
+		prometheus.GaugeValue,
+		float64(stats.Power.ProducedPhase3),
+		"3",
+	)
+	metrics <- prometheus.MustNewConstMetric(
+		descPowerVoltagePhase,
+		prometheus.GaugeValue,
+		float64(stats.Power.VoltagePhase1),
+		"1",
+	)
+	metrics <- prometheus.MustNewConstMetric(
+		descPowerVoltagePhase,
+		prometheus.GaugeValue,
+		float64(stats.Power.VoltagePhase2),
+		"2",
+	)
+	metrics <- prometheus.MustNewConstMetric(
+		descPowerVoltagePhase,
+		prometheus.GaugeValue,
+		float64(stats.Power.VoltagePhase3),
+		"3",
+	)
+	metrics <- prometheus.MustNewConstMetric(
+		descPowerCurrentPhase,
+		prometheus.GaugeValue,
+		float64(stats.Power.ConsumedPhase1),
+		"1",
+	)
+	metrics <- prometheus.MustNewConstMetric(
+		descPowerCurrentPhase,
+		prometheus.GaugeValue,
+		float64(stats.Power.ConsumedPhase2),
+		"2",
+	)
+	metrics <- prometheus.MustNewConstMetric(
+		descPowerCurrentPhase,
+		prometheus.GaugeValue,
+		float64(stats.Power.ConsumedPhase3),
+		"3",
+	)
+	metrics <- prometheus.MustNewConstMetric(
+		descPowerConsumedHour,
+		prometheus.GaugeValue,
+		stats.Power.ConsumedHour,
+	)
+	metrics <- prometheus.MustNewConstMetric(
+		descPowerConsumedNet,
+		prometheus.GaugeValue,
+		stats.Power.ConsumedNet,
+	)
+	log.Println("⚙️ Collected some metrics")
+}
+
+func boolToFloat64(b bool) float64 {
+	if b {
+		return 1
+	}
+	return 0
 }
 
 func getInt(s string) int {
@@ -143,7 +313,7 @@ func getFloat(s string) float64 {
 	return value
 }
 
-func fetchSystemData() {
+func fetchSystemData() Stats {
 	host := os.Getenv("SGPE_HOST")
 	if host == "" {
 		log.Fatal("💥 SGPE_HOST not set")
@@ -163,29 +333,31 @@ func fetchSystemData() {
 			ConsumedHour: getFloat(apiResponse.GasDeliveredHour),
 		},
 		Power: Power{
-			Tariff:          getInt(apiResponse.ElectricityTariff),
-			ConsumedTariff1: getFloat(apiResponse.EnergyDeliveredTariff1),
-			ProducedTariff1: getFloat(apiResponse.EnergyReturnedTariff1),
-			ConsumedTariff2: getFloat(apiResponse.EnergyDeliveredTariff2),
-			ProducedTariff2: getFloat(apiResponse.EnergyReturnedTariff2),
-			ConsumedTotal:   getInt(apiResponse.PowerDeliveredTotal),
-			ProducedTotal:   getInt(apiResponse.PowerReturnedTotal),
-			ConsumedL1:      getInt(apiResponse.PowerDeliveredL1),
-			ConsumedL2:      getInt(apiResponse.PowerDeliveredL2),
-			ConsumedL3:      getInt(apiResponse.PowerDeliveredL3),
-			ProducedL1:      getInt(apiResponse.PowerReturnedL1),
-			ProducedL2:      getInt(apiResponse.PowerReturnedL2),
-			ProducedL3:      getInt(apiResponse.PowerReturnedL3),
-			VoltageL1:       getInt(apiResponse.VoltageL1),
-			VoltageL2:       getInt(apiResponse.VoltageL2),
-			VoltageL3:       getInt(apiResponse.VoltageL3),
-			CurrentL1:       getInt(apiResponse.CurrentL1),
-			CurrentL2:       getInt(apiResponse.CurrentL2),
-			CurrentL3:       getInt(apiResponse.CurrentL3),
-			ConsumedHour:    getFloat(apiResponse.PowerDeliveredHour),
+			Tariff:               getInt(apiResponse.ElectricityTariff),
+			ConsumedTotalTariff1: getFloat(apiResponse.EnergyDeliveredTariff1),
+			ProducedTotalTariff1: getFloat(apiResponse.EnergyReturnedTariff1),
+			ConsumedTotalTariff2: getFloat(apiResponse.EnergyDeliveredTariff2),
+			ProducedTotalTariff2: getFloat(apiResponse.EnergyReturnedTariff2),
+			ConsumedCurrent:      getInt(apiResponse.PowerDeliveredTotal),
+			ProducedCurrent:      getInt(apiResponse.PowerReturnedTotal),
+			ConsumedPhase1:       getInt(apiResponse.PowerDeliveredL1),
+			ConsumedPhase2:       getInt(apiResponse.PowerDeliveredL2),
+			ConsumedPhase3:       getInt(apiResponse.PowerDeliveredL3),
+			ProducedPhase1:       getInt(apiResponse.PowerReturnedL1),
+			ProducedPhase2:       getInt(apiResponse.PowerReturnedL2),
+			ProducedPhase3:       getInt(apiResponse.PowerReturnedL3),
+			VoltagePhase1:        getInt(apiResponse.VoltageL1),
+			VoltagePhase2:        getInt(apiResponse.VoltageL2),
+			VoltagePhase3:        getInt(apiResponse.VoltageL3),
+			CurrentPhase1:        getInt(apiResponse.CurrentL1),
+			CurrentPhase2:        getInt(apiResponse.CurrentL2),
+			CurrentPhase3:        getInt(apiResponse.CurrentL3),
+			ConsumedHour:         getFloat(apiResponse.PowerDeliveredHour),
+			ConsumedNet:          getFloat(apiResponse.PowerDeliveredNetto),
 		},
 	}
 
+	return stats
 }
 
 func getDataFromApi(url string, data interface{}) {

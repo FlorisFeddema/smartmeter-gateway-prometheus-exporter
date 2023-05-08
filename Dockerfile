@@ -14,8 +14,6 @@ COPY . .
 RUN go build -o app
 
 FROM scratch as runtime
-COPY --from=build --chown=app:app /build/app /app
-
 USER app
-
+COPY --from=build /build/app /app
 ENTRYPOINT ["/app"]
