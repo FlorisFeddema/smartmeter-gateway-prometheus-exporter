@@ -34,18 +34,18 @@ var (
 	descPowerConsumedNet        = prometheus.NewDesc("smartmeter_gateway_power_consumed_nett", "The net amount of power currently consumed in Watts", nil, nil)
 )
 
-type Firmware struct {
+type firmware struct {
 	Running         int
 	Available       int
 	UpdateAvailable bool
 }
 
-type Gas struct {
+type gas struct {
 	Consumed     float64
 	ConsumedHour float64
 }
 
-type Power struct {
+type power struct {
 	Tariff               int
 	ConsumedTotalTariff1 float64
 	ProducedTotalTariff1 float64
@@ -70,12 +70,12 @@ type Power struct {
 }
 
 type Stats struct {
-	Firmware Firmware
-	Gas      Gas
-	Power    Power
+	Firmware firmware
+	Gas      gas
+	Power    power
 }
 
-type ApiResponse struct {
+type apiResponse struct {
 	FirmwareRunning         string `json:"firmware_running"`
 	FirmwareAvailable       string `json:"firmware_available"`
 	FirmwareUpdateAvailable string `json:"firmware_update_available"`
@@ -319,20 +319,20 @@ func fetchSystemData() Stats {
 		log.Fatal("💥 SGPE_HOST not set")
 	}
 
-	var apiResponse *ApiResponse
+	var apiResponse *apiResponse
 	getDataFromApi(fmt.Sprintf(gatewayApiURL, host), &apiResponse)
 
 	stats := Stats{
-		Firmware: Firmware{
+		Firmware: firmware{
 			Running:         getInt(apiResponse.FirmwareRunning),
 			Available:       getInt(apiResponse.FirmwareAvailable),
 			UpdateAvailable: getBool(apiResponse.FirmwareUpdateAvailable),
 		},
-		Gas: Gas{
+		Gas: gas{
 			Consumed:     getFloat(apiResponse.GasDelivered),
 			ConsumedHour: getFloat(apiResponse.GasDeliveredHour),
 		},
-		Power: Power{
+		Power: power{
 			Tariff:               getInt(apiResponse.ElectricityTariff),
 			ConsumedTotalTariff1: getFloat(apiResponse.EnergyDeliveredTariff1),
 			ProducedTotalTariff1: getFloat(apiResponse.EnergyReturnedTariff1),
