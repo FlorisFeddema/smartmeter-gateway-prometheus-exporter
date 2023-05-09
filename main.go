@@ -138,7 +138,7 @@ func main() {
 	http.HandleFunc("/healthz", func(w http.ResponseWriter, r *http.Request) { _, _ = w.Write([]byte("ok")) })
 	log.Println("⚙️ exporter is ready to accept requests")
 
-	log.Fatal(http.ListenAndServe(":80", nil))
+	log.Fatal(http.ListenAndServe(":9000", nil))
 }
 
 func (e *Exporter) Collect(metrics chan<- prometheus.Metric) {
