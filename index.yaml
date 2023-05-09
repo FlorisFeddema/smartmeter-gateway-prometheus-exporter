@@ -2,6 +2,15 @@ apiVersion: v1
 entries:
   smartmeter-gateway-prometheus-exporter:
   - apiVersion: v2
+    created: "2023-05-09T12:58:58.398552397Z"
+    description: A Helm chart for the smartmeter-gateway-prometheus-exporter application
+    digest: 0edfbad74174731dd7a064763de96500c8f54f4df9359809e82f669e909f32ad
+    name: smartmeter-gateway-prometheus-exporter
+    type: application
+    urls:
+    - https://github.com/FlorisFeddema/smartmeter-gateway-prometheus-exporter/releases/download/smartmeter-gateway-prometheus-exporter-0.0.9/smartmeter-gateway-prometheus-exporter-0.0.9.tgz
+    version: 0.0.9
+  - apiVersion: v2
     created: "2023-05-09T11:26:19.068361362Z"
     description: A Helm chart for the smartmeter-gateway-prometheus-exporter application
     digest: f3b3536768e173a6bc17a44883831d18523cc006386b32b211479a63ddddb526
@@ -37,4 +46,4 @@ entries:
     urls:
     - https://github.com/FlorisFeddema/smartmeter-gateway-prometheus-exporter/releases/download/smartmeter-gateway-prometheus-exporter-0.0.3/smartmeter-gateway-prometheus-exporter-0.0.3.tgz
     version: 0.0.3
-generated: "2023-05-09T11:26:19.068376363Z"
+generated: "2023-05-09T12:58:58.398749308Z"
