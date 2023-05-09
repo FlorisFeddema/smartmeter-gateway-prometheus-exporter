@@ -120,8 +120,8 @@ jobs:
           platforms: linux/amd64
 #          platforms: linux/amd64,linux/arm64
           tags: |
-            ghcr.io/FlorisFeddema/smartmeter-gateway-prometheus-exporter:latest
-            ghcr.io/FlorisFeddema/smartmeter-gateway-prometheus-exporter:${{ env.VERSION }}
+            ghcr.io/florisfeddema/smartmeter-gateway-prometheus-exporter:latest
+            ghcr.io/florisfeddema/smartmeter-gateway-prometheus-exporter:${{ env.VERSION }}
           push: true
 
       - name: Update version in Chart.yaml
