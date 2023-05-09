@@ -15,7 +15,7 @@ RUN go build -o app
 
 FROM scratch as runtime
 
-LABEL org.opencontainers.image.source=https://github.com/florisfeddema/smartmeter-gateway-prometheus-exporter
+LABEL org.opencontainers.image.source="https://github.com/FlorisFeddema/smartmeter-gateway-prometheus-exporter"
 LABEL org.opencontainers.image.description="Image for smartmeter-gateway-prometheus-exporter application"
 LABEL org.opencontainers.image.licenses=Apache
 
