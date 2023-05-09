@@ -5,6 +5,9 @@ WORKDIR /build
 ENV CGO_ENABLED=0
 ENV GOOS=linux
 ENV GOARCH=amd64
+LABEL org.opencontainers.image.source=https://github.com/florisfeddema/smartmeter-gateway-prometheus-exporter
+LABEL org.opencontainers.image.description="Image for smartmeter-gateway-prometheus-exporter application"
+LABEL org.opencontainers.image.licenses=Apache
 
 COPY go.mod go.sum ./
 RUN go mod download
