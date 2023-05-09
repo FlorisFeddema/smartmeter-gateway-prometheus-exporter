@@ -133,10 +133,11 @@ jobs:
           message: 'Update Image Version to ${{ env.VERSION }}'
           commitChange: true
           branch: main
+          token: ${{ secrets.GH_TOKEN }}
 
       - name: Release chart
         uses: helm/chart-releaser-action@v1.5.0
         with:
           charts_dir: charts
         env:
-          CR_TOKEN: "${{ secrets.GITHUB_TOKEN }}"
+          CR_TOKEN: "${{ secrets.GH_TOKEN }}"
