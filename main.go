@@ -188,6 +188,18 @@ func (e *Exporter) Collect(metrics chan<- prometheus.Metric) {
 		"2",
 	)
 	metrics <- prometheus.MustNewConstMetric(
+		descPowerProducedTotal,
+		prometheus.CounterValue,
+		stats.Power.ProducedTotalTariff1,
+		"1",
+	)
+	metrics <- prometheus.MustNewConstMetric(
+		descPowerProducedTotal,
+		prometheus.CounterValue,
+		stats.Power.ProducedTotalTariff2,
+		"2",
+	)
+	metrics <- prometheus.MustNewConstMetric(
 		descPowerConsumedCurrent,
 		prometheus.GaugeValue,
 		float64(stats.Power.ConsumedCurrent),
