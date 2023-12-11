@@ -51,20 +51,20 @@ type power struct {
 	ProducedTotalTariff1 float64
 	ConsumedTotalTariff2 float64
 	ProducedTotalTariff2 float64
-	ConsumedCurrent      int
-	ProducedCurrent      int
+	ConsumedCurrent      float64
+	ProducedCurrent      float64
 	ConsumedPhase1       int
 	ConsumedPhase2       int
 	ConsumedPhase3       int
 	ProducedPhase1       int
 	ProducedPhase2       int
 	ProducedPhase3       int
-	VoltagePhase1        int
-	VoltagePhase2        int
-	VoltagePhase3        int
-	CurrentPhase1        int
-	CurrentPhase2        int
-	CurrentPhase3        int
+	VoltagePhase1        float64
+	VoltagePhase2        float64
+	VoltagePhase3        float64
+	CurrentPhase1        float64
+	CurrentPhase2        float64
+	CurrentPhase3        float64
 	ConsumedHour         float64
 	ConsumedNet          float64
 }
@@ -202,12 +202,12 @@ func (e *Exporter) Collect(metrics chan<- prometheus.Metric) {
 	metrics <- prometheus.MustNewConstMetric(
 		descPowerConsumedCurrent,
 		prometheus.GaugeValue,
-		float64(stats.Power.ConsumedCurrent),
+		stats.Power.ConsumedCurrent,
 	)
 	metrics <- prometheus.MustNewConstMetric(
 		descPowerProducedCurrent,
 		prometheus.GaugeValue,
-		float64(stats.Power.ProducedCurrent),
+		stats.Power.ProducedCurrent,
 	)
 	metrics <- prometheus.MustNewConstMetric(
 		descPowerConsumedPhase,
@@ -248,37 +248,37 @@ func (e *Exporter) Collect(metrics chan<- prometheus.Metric) {
 	metrics <- prometheus.MustNewConstMetric(
 		descPowerVoltagePhase,
 		prometheus.GaugeValue,
-		float64(stats.Power.VoltagePhase1),
+		stats.Power.VoltagePhase1,
 		"1",
 	)
 	metrics <- prometheus.MustNewConstMetric(
 		descPowerVoltagePhase,
 		prometheus.GaugeValue,
-		float64(stats.Power.VoltagePhase2),
+		stats.Power.VoltagePhase2,
 		"2",
 	)
 	metrics <- prometheus.MustNewConstMetric(
 		descPowerVoltagePhase,
 		prometheus.GaugeValue,
-		float64(stats.Power.VoltagePhase3),
+		stats.Power.VoltagePhase3,
 		"3",
 	)
 	metrics <- prometheus.MustNewConstMetric(
 		descPowerCurrentPhase,
 		prometheus.GaugeValue,
-		float64(stats.Power.ConsumedPhase1),
+		float64(stats.Power.CurrentPhase1),
 		"1",
 	)
 	metrics <- prometheus.MustNewConstMetric(
 		descPowerCurrentPhase,
 		prometheus.GaugeValue,
-		float64(stats.Power.ConsumedPhase2),
+		float64(stats.Power.CurrentPhase2),
 		"2",
 	)
 	metrics <- prometheus.MustNewConstMetric(
 		descPowerCurrentPhase,
 		prometheus.GaugeValue,
-		float64(stats.Power.ConsumedPhase3),
+		float64(stats.Power.CurrentPhase3),
 		"3",
 	)
 	metrics <- prometheus.MustNewConstMetric(
@@ -350,20 +350,20 @@ func fetchSystemData() Stats {
 			ProducedTotalTariff1: getFloat(apiResponse.EnergyReturnedTariff1),
 			ConsumedTotalTariff2: getFloat(apiResponse.EnergyDeliveredTariff2),
 			ProducedTotalTariff2: getFloat(apiResponse.EnergyReturnedTariff2),
-			ConsumedCurrent:      getInt(apiResponse.PowerDeliveredTotal),
-			ProducedCurrent:      getInt(apiResponse.PowerReturnedTotal),
+			ConsumedCurrent:      getFloat(apiResponse.PowerDeliveredTotal),
+			ProducedCurrent:      getFloat(apiResponse.PowerReturnedTotal),
 			ConsumedPhase1:       getInt(apiResponse.PowerDeliveredL1),
 			ConsumedPhase2:       getInt(apiResponse.PowerDeliveredL2),
 			ConsumedPhase3:       getInt(apiResponse.PowerDeliveredL3),
 			ProducedPhase1:       getInt(apiResponse.PowerReturnedL1),
 			ProducedPhase2:       getInt(apiResponse.PowerReturnedL2),
 			ProducedPhase3:       getInt(apiResponse.PowerReturnedL3),
-			VoltagePhase1:        getInt(apiResponse.VoltageL1),
-			VoltagePhase2:        getInt(apiResponse.VoltageL2),
-			VoltagePhase3:        getInt(apiResponse.VoltageL3),
-			CurrentPhase1:        getInt(apiResponse.CurrentL1),
-			CurrentPhase2:        getInt(apiResponse.CurrentL2),
-			CurrentPhase3:        getInt(apiResponse.CurrentL3),
+			VoltagePhase1:        getFloat(apiResponse.VoltageL1),
+			VoltagePhase2:        getFloat(apiResponse.VoltageL2),
+			VoltagePhase3:        getFloat(apiResponse.VoltageL3),
+			CurrentPhase1:        getFloat(apiResponse.CurrentL1),
+			CurrentPhase2:        getFloat(apiResponse.CurrentL2),
+			CurrentPhase3:        getFloat(apiResponse.CurrentL3),
 			ConsumedHour:         getFloat(apiResponse.PowerDeliveredHour),
 			ConsumedNet:          getFloat(apiResponse.PowerDeliveredNetto),
 		},
